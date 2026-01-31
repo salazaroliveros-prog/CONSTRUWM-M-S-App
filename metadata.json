@@ -1,0 +1,9 @@
+
+{
+  "name": "M&S Constructora Multi-Project Management System",
+  "description": "A comprehensive executive-grade web application for construction companies, managing budgets, HR, projects, and finance with real-time tracking.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
