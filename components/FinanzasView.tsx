@@ -5,6 +5,7 @@ import { AppView, Transaction, Project } from '../types';
 import { storageService } from '../services/storageService';
 import { geminiGenerate } from '../services/geminiProxy';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LOGO_URL } from '../constants';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -115,9 +116,12 @@ const FinanzasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
             <div className="bg-white p-10 rounded-[3rem] shadow-2xl border overflow-hidden relative group">
               {/* Selector Contextual cerca del Gráfico */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Flujo de Efectivo Dinámico</h3>
-                  <p className="text-sm font-black text-slate-800 uppercase mt-1">Contexto: {selectedProjectName}</p>
+                <div className="flex items-center gap-4">
+                  <img src={LOGO_URL} alt="M&S" className="h-12 object-contain" />
+                  <div>
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Flujo de Efectivo Dinámico</h3>
+                    <p className="text-sm font-black text-slate-800 uppercase mt-1">Contexto: {selectedProjectName}</p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-3 w-full md:w-auto">

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import Layout from './Layout';
 import { AppView, Project } from '../types';
 import { storageService } from '../services/storageService';
-import { COLORS } from '../constants';
+import { COLORS, LOGO_URL } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface Props {
@@ -33,6 +33,13 @@ const SeguimientoView: React.FC<Props> = ({ onNavigate, onLogout }) => {
         
         <div className="bg-white p-8 rounded-[2rem] shadow-xl border flex flex-col md:flex-row gap-6 items-end no-print">
           <div className="flex-1 w-full">
+            <div className="flex items-center gap-4 mb-4">
+              <img src={LOGO_URL} alt="M&S" className="h-10 object-contain" />
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Seguimiento Técnico</p>
+                <p className="text-[9px] font-black text-[#b8860b] uppercase tracking-[0.35em]">Control de Avance</p>
+              </div>
+            </div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Seleccionar Obra para Auditoría</label>
             <select 
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#b8860b] font-bold"
@@ -49,8 +56,13 @@ const SeguimientoView: React.FC<Props> = ({ onNavigate, onLogout }) => {
         </div>
 
         <div className="hidden print:block mb-8 border-b-4 border-slate-900 pb-4">
-            <h1 className="text-3xl font-black">REPORTE DE AVANCE TÉCNICO</h1>
-            <p className="text-xs font-bold text-slate-500 uppercase">PROYECTO: {projects.find(p => p.id === selectedProjId)?.name || 'Consolidado'}</p>
+            <div className="flex items-center justify-between gap-8">
+              <div>
+                <h1 className="text-3xl font-black">REPORTE DE AVANCE TÉCNICO</h1>
+                <p className="text-xs font-bold text-slate-500 uppercase">PROYECTO: {projects.find(p => p.id === selectedProjId)?.name || 'Consolidado'}</p>
+              </div>
+              <img src={LOGO_URL} alt="M&S" className="h-14 object-contain" />
+            </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

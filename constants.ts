@@ -7,7 +7,7 @@ export const COLORS = {
 };
 
 // URL del Logo Corporativo WM / M&S - Enlace directo compatible
-export const LOGO_URL = 'https://i.imgur.com/aLt41kw.png'; 
+export const LOGO_URL = '/logo.png'; 
 
 export const GUATEMALA_UNITS = [
   'Quetzal', 'm3', 'm2', 'ml', 'saco', 'libra', 'varilla', 'quintal', 'unidad', 'global', 'pie tabla', 'litro', 'viaje', 'hora'

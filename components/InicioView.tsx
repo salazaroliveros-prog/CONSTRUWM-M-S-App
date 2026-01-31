@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './Layout';
 import { AppView, Transaction, Project } from '../types';
-import { GUATEMALA_UNITS, CATEGORIES_EXPENSE, CATEGORIES_INCOME, COLORS } from '../constants';
+import { GUATEMALA_UNITS, CATEGORIES_EXPENSE, CATEGORIES_INCOME, COLORS, LOGO_URL } from '../constants';
 import { storageService } from '../services/storageService';
 
 interface Props {
@@ -76,6 +76,7 @@ const InicioView: React.FC<Props> = ({ onNavigate, onLogout }) => {
               <span className="text-2xl">📋</span>
               <h2 className="text-white font-bold tracking-tight">Nuevo Movimiento en Obra</h2>
             </div>
+            <img src={LOGO_URL} alt="M&S" className="h-10 object-contain opacity-90" />
           </div>
           
           <div className="p-8 space-y-6">

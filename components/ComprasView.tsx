@@ -4,6 +4,7 @@ import Layout from './Layout';
 import { AppView, Transaction } from '../types';
 import { storageService } from '../services/storageService';
 import { dataUrlToInlineData, geminiGenerate, type GeminiPart } from '../services/geminiProxy';
+import { LOGO_URL } from '../constants';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -152,7 +153,9 @@ const ComprasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-40 group-hover:scale-110 transition-transform"></div>
             
             <div className="flex items-center gap-4 mb-8 relative">
-              <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg text-white font-black">LOG</div>
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-slate-100">
+                <img src={LOGO_URL} alt="M&S" className="h-8 w-8 object-contain" />
+              </div>
               <div>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight">Nueva Requisición</h3>
                 <p className="text-[9px] font-black text-[#b8860b] uppercase tracking-[0.3em]">Validación IA Obligatoria</p>

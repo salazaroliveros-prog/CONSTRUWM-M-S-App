@@ -5,6 +5,7 @@ import { AppView } from '../types';
 import { storageService } from '../services/storageService';
 import { geminiGenerate } from '../services/geminiProxy';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { LOGO_URL } from '../constants';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -76,6 +77,7 @@ const ReportesView: React.FC<Props> = ({ onNavigate, onLogout }) => {
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl border flex flex-col md:flex-row justify-between items-center gap-8 no-print">
           <div className="flex items-center gap-6">
             <div className="w-16 h-16 bg-[#b8860b] rounded-[2rem] flex items-center justify-center text-3xl shadow-xl">📊</div>
+            <img src={LOGO_URL} alt="M&S" className="h-14 object-contain" />
             <div>
               <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Generación de Reportes</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">Inteligencia de Negocios WM/M&S</p>
