@@ -3,7 +3,7 @@ import Layout from './Layout';
 import { AppView, Project } from '../types';
 import { storageService } from '../services/storageService';
 import { COLORS, TIPOLOGIAS, LOGO_URL } from '../constants';
-import { GoogleGenAI, Type } from "@google/genai";
+import { geminiGenerate } from '../services/geminiProxy';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -119,7 +119,6 @@ const ProyectosView: React.FC<Props> = ({ onNavigate, onLogout }) => {
     setIsTimelineLoading(true);
     setAiMilestones([]);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Senior Construction Manager Simulation: 
       Analiza el proyecto "${project.name}" de tipología ${project.typology} con ${project.constructionArea}m2 de construcción sobre un terreno de ${project.landArea}m2.
       Genera un cronograma técnico maestro de 8 hitos en JSON para un diagrama de Gantt.
@@ -131,12 +130,10 @@ const ProyectosView: React.FC<Props> = ({ onNavigate, onLogout }) => {
         ]
       }`;
 
-      const response = await ai.models.generateContent({
+      const response = await geminiGenerate({
         model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
+        prompt,
+        config: { responseMimeType: 'application/json' },
       });
       const result = JSON.parse(response.text || '{"milestones":[]}');
       setAiMilestones(result.milestones);

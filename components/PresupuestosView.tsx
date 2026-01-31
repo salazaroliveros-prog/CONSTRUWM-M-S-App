@@ -4,7 +4,7 @@ import Layout from './Layout';
 import { AppView, Project, BudgetItem } from '../types';
 import { storageService } from '../services/storageService';
 import { COLORS, TYPOLOGY_BUDGETS, INDIRECT_COSTS_PERCENT, UTILITY_PERCENT, TAX_PERCENT, LOGO_URL } from '../constants';
-import { GoogleGenAI, Type } from "@google/genai";
+import { geminiGenerate } from '../services/geminiProxy';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -92,7 +92,6 @@ const PresupuestosView: React.FC<Props> = ({ onNavigate, onLogout }) => {
 
     setIsEstimating(true);
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const currentProject = projects.find(p => p.id === selectedProjectId);
         
         const prompt = `Actúa como un Senior Estimator de construcción. Analiza estos renglones: ${JSON.stringify(activeItems)}. 
@@ -112,12 +111,10 @@ const PresupuestosView: React.FC<Props> = ({ onNavigate, onLogout }) => {
           "aiSummary": "string"
         }`;
         
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json"
-            }
+        const response = await geminiGenerate({
+          model: 'gemini-3-flash-preview',
+          prompt,
+          config: { responseMimeType: 'application/json' }
         });
 
         const result = JSON.parse(response.text || '{}');

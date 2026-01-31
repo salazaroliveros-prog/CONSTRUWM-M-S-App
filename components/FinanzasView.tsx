@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Layout from './Layout';
 import { AppView, Transaction, Project } from '../types';
 import { storageService } from '../services/storageService';
-import { GoogleGenAI, Type } from "@google/genai";
+import { geminiGenerate } from '../services/geminiProxy';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -67,13 +67,12 @@ const FinanzasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
     setIsAnalysing(true);
     setAiAnalysis(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const contextName = selectedProjectId === 'CONSOLIDATED' ? 'GLOBAL CONSOLIDADO' : projects.find(p => p.id === selectedProjectId)?.name;
       const prompt = `Analiza las finanzas de ${contextName}: Ingresos Q${metrics.income}, Egresos Q${metrics.expense}, Balance Q${metrics.balance}. 
       Proporciona un dictamen ejecutivo en Markdown resaltando riesgos y oportunidades de ahorro.`;
-      const response = await ai.models.generateContent({ 
-        model: 'gemini-3-pro-preview', 
-        contents: prompt
+      const response = await geminiGenerate({
+        model: 'gemini-3-pro-preview',
+        prompt,
       });
       setAiAnalysis(response.text || 'Sin análisis disponible.');
     } catch (e) { console.error(e); } finally { setIsAnalysing(false); }
@@ -82,13 +81,12 @@ const FinanzasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   const generatePrediction = async () => {
     setIsPredicting(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Predice el flujo de caja para los próximos 7 días basado en este historial: ${JSON.stringify(activeTxs.slice(0, 15))}. 
       Responde estrictamente en JSON con un objeto que contenga un array 'prediction'.`;
-      const response = await ai.models.generateContent({
+      const response = await geminiGenerate({
         model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: { responseMimeType: "application/json" }
+        prompt,
+        config: { responseMimeType: 'application/json' },
       });
       const result = JSON.parse(response.text || '{"prediction":[]}');
       setPredictionData(result.prediction);

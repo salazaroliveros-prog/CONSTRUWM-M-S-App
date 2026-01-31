@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import Layout from './Layout';
 import { AppView } from '../types';
 import { storageService } from '../services/storageService';
-import { GoogleGenAI } from "@google/genai";
+import { geminiGenerate } from '../services/geminiProxy';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 interface Props {
@@ -36,7 +36,6 @@ const ReportesView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   const generateReportInsight = async () => {
     setIsAnalysing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Actúa como Director General de M&S Constructora. 
       Analiza los siguientes datos consolidados y genera un REPORTE EJECUTIVO de 3 párrafos.
       
@@ -53,9 +52,9 @@ const ReportesView: React.FC<Props> = ({ onNavigate, onLogout }) => {
       3. Recomendación Estratégica para el próximo trimestre.
       Responde en Markdown profesional.`;
 
-      const response = await ai.models.generateContent({
+      const response = await geminiGenerate({
         model: 'gemini-3-flash-preview',
-        contents: prompt
+        prompt,
       });
       setAiInsight(response.text || 'Error al generar análisis.');
     } catch (e) {

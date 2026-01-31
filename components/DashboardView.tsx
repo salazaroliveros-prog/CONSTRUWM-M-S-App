@@ -5,7 +5,7 @@ import Layout from './Layout';
 import { COLORS, LOGO_URL } from '../constants';
 import { storageService } from '../services/storageService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { GoogleGenAI } from "@google/genai";
+import { geminiGenerate } from '../services/geminiProxy';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -37,11 +37,10 @@ const DashboardView: React.FC<Props> = ({ onNavigate, onLogout }) => {
     const getBriefing = async () => {
       setIsBriefingLoading(true);
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const prompt = `Actúa como CEO de M&S. Genera un resumen ejecutivo de 2 párrafos basado en: Q${metrics.profit} utilidad, ${metrics.active} obras activas, ${storageService.getEmployees().length} empleados. Usa tono formal.`;
-        const response = await ai.models.generateContent({
+        const response = await geminiGenerate({
           model: 'gemini-3-flash-preview',
-          contents: prompt
+          prompt,
         });
         setAiBriefing(response.text || null);
       } catch (e) { console.error(e); }

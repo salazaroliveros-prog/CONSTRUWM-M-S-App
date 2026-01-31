@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Layout from './Layout';
 import { AppView, Transaction } from '../types';
 import { storageService } from '../services/storageService';
-import { GoogleGenAI } from "@google/genai";
+import { dataUrlToInlineData, geminiGenerate, type GeminiPart } from '../services/geminiProxy';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -68,7 +68,6 @@ const ComprasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const historyTxs = storageService.getTransactions();
       
       // Proporcionamos un contexto histórico más amplio para que la IA detecte patrones
@@ -87,7 +86,7 @@ const ComprasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
         s: p.status
       }));
 
-      const parts: any[] = [];
+      const parts: GeminiPart[] = [];
       let fullTextPrompt = `CONSULTA DE REQUISICIÓN: "${userMsgText}"`;
       
       if (userMsgSpecs) {
@@ -109,19 +108,12 @@ const ComprasView: React.FC<Props> = ({ onNavigate, onLogout }) => {
       parts.push({ text: fullTextPrompt });
 
       if (userMsgImage) {
-        const base64Data = userMsgImage.split(',')[1];
-        const mimeType = userMsgImage.split(';')[0].split(':')[1];
-        parts.push({
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType
-          }
-        });
+        parts.push({ inlineData: dataUrlToInlineData(userMsgImage) });
       }
 
-      const response = await ai.models.generateContent({
+      const response = await geminiGenerate({
         model: 'gemini-3-pro-preview',
-        contents: { parts },
+        parts,
         config: {
           systemInstruction: `Eres el "Logistics Intelligence Director" de M&S Constructora. 
           Tu objetivo es minimizar el costo de adquisición (COA) y garantizar el flujo de materiales.

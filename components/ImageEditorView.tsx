@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import Layout from './Layout';
 import { AppView } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { dataUrlToInlineData, geminiGenerate } from '../services/geminiProxy';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -37,39 +37,18 @@ const ImageEditorView: React.FC<Props> = ({ onNavigate, onLogout }) => {
     setError(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const base64Data = sourceImage.split(',')[1];
-      const mimeType = sourceImage.split(';')[0].split(':')[1];
-
-      const response = await ai.models.generateContent({
+      const response = await geminiGenerate({
         model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: mimeType,
-              },
-            },
-            {
-              text: `Please edit this image according to the following instruction: ${prompt}. Return the modified image.`,
-            },
-          ],
-        },
+        parts: [
+          { inlineData: dataUrlToInlineData(sourceImage) },
+          { text: `Please edit this image according to the following instruction: ${prompt}. Return the modified image.` },
+        ],
       });
 
-      let foundImage = false;
-      if (response.candidates?.[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            setEditedImage(`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
-            foundImage = true;
-            break;
-          }
-        }
-      }
-
-      if (!foundImage) {
+      const firstImage = response.images?.[0];
+      if (firstImage) {
+        setEditedImage(`data:${firstImage.mimeType};base64,${firstImage.data}`);
+      } else {
         setError("La IA no devolvió una imagen editada. Intente con una instrucción diferente.");
       }
     } catch (e) {

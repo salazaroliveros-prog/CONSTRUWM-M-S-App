@@ -32,7 +32,7 @@ Opciones recomendadas:
 
 ## Variables de entorno
 
-- `GEMINI_API_KEY`: clave de Gemini (ver [.env.example](.env.example)).
+- `GEMINI_API_KEY`: clave de Gemini (usada por el servidor en Cloud Run; ver [.env.example](.env.example)).
 - `VITE_BASE` (opcional): base path para despliegues en subruta (ej. GitHub Pages). Ejemplo: `VITE_BASE=/mi-repo/`
 
 Importante: esta app usa la API key en el frontend; si despliegas públicamente, esa key queda expuesta. Para producción, lo ideal es mover la llamada a Gemini a un backend o función serverless.
@@ -43,6 +43,8 @@ Importante: esta app usa la API key en el frontend; si despliegas públicamente,
    - `npm run build`
 2. Configurar `VITE_BASE` para tu repo (ej. `/mi-repo/`) y volver a construir.
 3. Publicar `dist/` con GitHub Pages (o usando GitHub Actions).
+
+Nota: GitHub Pages es hosting estático. Las funciones de IA (Gemini) requieren un backend; para eso usa Cloud Run.
 
 ## Despliegue a Google Cloud
 
@@ -57,7 +59,7 @@ Guía paso a paso (con comandos `gcloud`): [docs/deploy-gcp-storage.md](docs/dep
 ### Opción B: Cloud Run (contenedor)
 
 1. `npm run build`
-2. Crear una imagen (por ejemplo con Nginx) que sirva `dist/`.
+2. Crear una imagen Docker que sirva `dist/` y exponga un endpoint `/api` para Gemini (este repo ya incluye el `Dockerfile`).
 3. Desplegar la imagen en Cloud Run.
 
 Este repo ya incluye una opción lista para Cloud Run:
@@ -67,4 +69,6 @@ Este repo ya incluye una opción lista para Cloud Run:
 
 Ejemplo (Cloud Run, desde tu máquina con gcloud configurado):
 
-- `gcloud run deploy wm-constructora --source . --region us-central1 --allow-unauthenticated`
+- `gcloud run deploy wm-constructora --source . --region us-central1 --allow-unauthenticated --set-env-vars GEMINI_API_KEY=TU_KEY`
+
+Recomendación: en producción usa Secret Manager en lugar de `--set-env-vars`.
