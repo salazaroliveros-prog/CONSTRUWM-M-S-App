@@ -35,6 +35,32 @@ Opciones recomendadas:
 - `GEMINI_API_KEY`: clave de Gemini (usada por el servidor en Cloud Run; ver [.env.example](.env.example)).
 - `VITE_BASE` (opcional): base path para despliegues en subruta (ej. GitHub Pages). Ejemplo: `VITE_BASE=/mi-repo/`
 
+### Supabase (DB + Edge Functions)
+
+Este proyecto incluye Edge Functions para:
+
+- Portal público de asistencia: `mark-attendance`
+- Portal público de postulantes/contrato: `submit-contract`
+- Admin RRHH (sin Supabase Auth todavía): `admin-rh`
+
+Frontend (en `.env.local`, ver [.env.example](.env.example)):
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ORG_ID`
+- `VITE_PORTAL_ATTENDANCE_TOKEN`
+- `VITE_PORTAL_APPLICATIONS_TOKEN`
+- `VITE_ADMIN_TOKEN`
+
+Secrets en Supabase (Dashboard → Edge Functions → Secrets):
+
+- `WM_ORG_ID`
+- `PORTAL_ATTENDANCE_TOKEN`
+- `PORTAL_APPLICATIONS_TOKEN`
+- `ADMIN_TOKEN`
+- `SERVICE_ROLE_KEY` (service role key; Supabase bloquea nombres que empiezan con `SUPABASE_`)
+- `WM_TIMEZONE` (opcional, default `America/Guatemala`)
+
 Importante: esta app usa la API key en el frontend; si despliegas públicamente, esa key queda expuesta. Para producción, lo ideal es mover la llamada a Gemini a un backend o función serverless.
 
 ## Despliegue a GitHub Pages (estático)

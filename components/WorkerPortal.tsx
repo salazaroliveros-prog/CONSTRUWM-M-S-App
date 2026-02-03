@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { storageService } from '../services/storageService';
-import { CandidateApplication, AppView, Employee, AttendanceRecord } from '../types';
+import { AppView } from '../types';
 import { POSITIONS, LOGO_URL } from '../constants';
+import { attendanceErrorToUserMessage, edgeApi, formatApiError } from '../services/edgeApi';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -12,7 +12,6 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
   const [mode, setMode] = useState<'APPLY' | 'ATTENDANCE' | 'SUCCESS'>('ATTENDANCE');
   const [time, setTime] = useState(new Date());
   const [workerId, setWorkerId] = useState('');
-  const [isEmergency, setIsEmergency] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [currentCoords, setCurrentCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -49,63 +48,54 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!applyForm.name || !applyForm.dpi || applyForm.dpi.length !== 13) return alert("DPI Inválido.");
+    if (!edgeApi.isConfigured()) {
+      alert('Supabase no está configurado. Falta .env.local');
+      return;
+    }
     setIsLoading(true);
-    const app: CandidateApplication = {
-      id: crypto.randomUUID(),
-      name: applyForm.name, phone: applyForm.phone, dpi: applyForm.dpi,
-      experience: applyForm.experience, positionApplied: applyForm.position,
-      status: 'PENDING', timestamp: new Date().toISOString()
-    };
-    storageService.saveApplication(app);
-    setTimeout(() => {
+    edgeApi.portalSubmitContract({
+      name: applyForm.name,
+      phone: applyForm.phone,
+      dpi: applyForm.dpi,
+      experience: applyForm.experience,
+      positionApplied: applyForm.position,
+    }).then(() => {
       setIsLoading(false);
       setMode('SUCCESS');
-    }, 1500);
+    }).catch((err) => {
+      setIsLoading(false);
+      alert(formatApiError(err));
+    });
   };
 
   const handleAttendance = () => {
     if (!workerId) return alert("Ingrese ID Corporativo");
-    setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const employees = storageService.getEmployees();
-        const empIndex = employees.findIndex(e => e.workerId.toUpperCase() === workerId.toUpperCase());
-        
-        if (empIndex === -1) {
-          alert("Error: ID no reconocido.");
-          setIsLoading(false);
+        if (!edgeApi.isConfigured()) {
+          alert('Supabase no está configurado. Falta .env.local');
           return;
         }
-
-        const emp = employees[empIndex];
-        const record: AttendanceRecord = {
-          id: crypto.randomUUID(),
-          date: new Date().toISOString().split('T')[0],
+        setIsLoading(true);
+        edgeApi.portalMarkAttendance({
+          workerId,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-          method: isEmergency ? 'EMERGENCY' : 'SELF'
-        };
-
-        const alreadyMarked = emp.attendanceHistory?.some(r => r.date === record.date);
-        if (alreadyMarked && !isEmergency) {
-            alert("Ya ha marcado asistencia hoy.");
-            setIsLoading(false);
-            return;
-        }
-
-        emp.attendanceStatus = 'IN';
-        if (!emp.attendanceHistory) emp.attendanceHistory = [];
-        emp.attendanceHistory.push(record);
-        storageService.saveEmployee(emp);
-        
-        alert(`¡Asistencia Validada!\nColaborador: ${emp.name}\nModo: ${isEmergency ? 'APOYO/EMERGENCIA' : 'INDIVIDUAL'}`);
-        setWorkerId('');
-        setIsEmergency(false);
-        setIsLoading(false);
+          method: 'SELF',
+          deviceLabel: navigator.userAgent,
+        }).then((resp) => {
+          alert(`¡Asistencia Validada!\nColaborador: ${resp.employeeName}\nModo: INDIVIDUAL`);
+          setWorkerId('');
+          setIsLoading(false);
+        }).catch((err) => {
+          const msg = formatApiError(err);
+          alert(attendanceErrorToUserMessage(msg));
+          setIsLoading(false);
+        });
       },
       () => {
-        setIsLoading(false);
         setLocationError("Error de GPS.");
+        setIsLoading(false);
       }
     );
   };
@@ -142,7 +132,7 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
                  <InputField label="WhatsApp de Contacto" value={applyForm.phone} onChange={(v:any) => setApplyForm({...applyForm, phone: v})} />
                  <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Especialidad Técnica</label>
-                    <select className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] font-black text-slate-900 uppercase text-xs" value={applyForm.position} onChange={e => setApplyForm({...applyForm, position: e.target.value})}>
+                    <select aria-label="Especialidad Técnica" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] font-black text-slate-900 uppercase text-xs" value={applyForm.position} onChange={e => setApplyForm({...applyForm, position: e.target.value})}>
                       {POSITIONS.map(p => <option key={p.title} value={p.title}>{p.title}</option>)}
                     </select>
                  </div>
@@ -169,7 +159,7 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
                   </div>
                )}
 
-               {isTooLate && !isEmergency && (
+              {isTooLate && (
                   <div className="bg-red-50 p-6 rounded-[2.5rem] border-2 border-red-100">
                      <p className="text-[11px] font-black text-red-600 uppercase tracking-widest">VENTANA DE TIEMPO CERRADA</p>
                      <p className="text-[9px] font-bold text-red-400 uppercase mt-2">Asistencia solo permitida de 07:00 a 07:30 AM</p>
@@ -195,29 +185,14 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
 
                <button 
                  onClick={handleAttendance}
-                 disabled={isLoading || (!isAttendanceOpen && !isEmergency)}
-                 className={`w-full py-8 rounded-[3rem] font-black uppercase tracking-[0.4em] shadow-2xl transition-all flex items-center justify-center gap-4 text-xs ${((isAttendanceOpen || isEmergency) && currentCoords) ? 'bg-slate-900 text-white active:scale-95 shadow-slate-200' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                 disabled={isLoading || !isAttendanceOpen}
+                 className={`w-full py-8 rounded-[3rem] font-black uppercase tracking-[0.4em] shadow-2xl transition-all flex items-center justify-center gap-4 text-xs ${(isAttendanceOpen && currentCoords) ? 'bg-slate-900 text-white active:scale-95 shadow-slate-200' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
                >
                  {isLoading ? (
                    <div className="w-5 h-5 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
                  ) : (
-                   (isAttendanceOpen || isEmergency) ? 'VALIDAR INGRESO ✅' : 'Terminal Bloqueada'
+                   isAttendanceOpen ? 'VALIDAR INGRESO ✅' : 'Terminal Bloqueada'
                  )}
-               </button>
-            </div>
-
-            <div className={`p-10 rounded-[4rem] shadow-2xl text-white space-y-6 relative overflow-hidden group transition-all ${isEmergency ? 'bg-red-600' : 'bg-slate-900'}`}>
-               <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16 opacity-5 group-hover:scale-150 transition-transform"></div>
-               <div className="flex items-center gap-4">
-                  <span className="text-3xl">🆘</span>
-                  <h3 className="font-black uppercase text-xs tracking-widest text-[#b8860b]">Apoyo a Compañero / Emergencia</h3>
-               </div>
-               <p className="text-[11px] text-slate-300 leading-relaxed font-bold italic opacity-80">"Use esta función únicamente si un compañero extravió o dañó su dispositivo. Se requerirá el ID del trabajador afectado."</p>
-               <button 
-                 onClick={() => setIsEmergency(!isEmergency)}
-                 className={`w-full py-5 rounded-[1.8rem] font-black text-[10px] uppercase border-2 transition-all ${isEmergency ? 'bg-white text-red-600 border-white shadow-xl' : 'border-white/10 text-white hover:bg-white/5'}`}
-               >
-                 {isEmergency ? 'CANCELAR APOYO' : 'ACTIVAR PROTOCOLO DE APOYO'}
                </button>
             </div>
           </div>
@@ -235,7 +210,7 @@ const WorkerPortal: React.FC<Props> = ({ onNavigate }) => {
 const InputField = ({ label, value, onChange, type = "text" }: any) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">{label}</label>
-    <input type={type} className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] outline-none font-black text-slate-900 focus:border-[#b8860b] focus:bg-white transition-all shadow-inner text-sm" value={value} onChange={e => onChange(e.target.value)} />
+    <input aria-label={label} type={type} className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.8rem] outline-none font-black text-slate-900 focus:border-[#b8860b] focus:bg-white transition-all shadow-inner text-sm" value={value} onChange={e => onChange(e.target.value)} />
   </div>
 );
 

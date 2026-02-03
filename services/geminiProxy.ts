@@ -50,6 +50,14 @@ export async function geminiGenerate(request: GeminiGenerateRequest): Promise<Ge
   });
 
   if (!res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const payload = (await res.json().catch(() => null)) as any;
+      const msg = payload?.error || payload?.message;
+      const details = payload?.details;
+      throw new Error(details ? `${msg} (${details})` : (msg || `Gemini request failed (${res.status})`));
+    }
+
     const text = await res.text().catch(() => '');
     throw new Error(text || `Gemini request failed (${res.status})`);
   }

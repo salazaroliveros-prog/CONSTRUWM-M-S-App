@@ -43,7 +43,13 @@ const DashboardView: React.FC<Props> = ({ onNavigate, onLogout }) => {
           prompt,
         });
         setAiBriefing(response.text || null);
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Expected in local/prod when Gemini isn't configured.
+        if (!/Gemini is not configured/i.test(msg)) {
+          console.error(e);
+        }
+      }
       finally { setIsBriefingLoading(false); }
     };
     getBriefing();

@@ -12,7 +12,8 @@ const __dirname = path.dirname(__filename);
 
 const distDir = path.resolve(__dirname, '..', 'dist');
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKeyRaw = process.env.GEMINI_API_KEY;
+const apiKey = apiKeyRaw && apiKeyRaw !== 'PLACEHOLDER_API_KEY' ? apiKeyRaw : undefined;
 if (!apiKey) {
   // Don't crash local boot if user only wants static, but API will be unavailable.
   console.warn('GEMINI_API_KEY is not set. /api/gemini/* will return 503.');
@@ -79,7 +80,7 @@ function sanitizeConfig(config) {
 
 app.post('/api/gemini/generate', rateLimit, async (req, res) => {
   if (!ai) {
-    res.status(503).send('Gemini is not configured on this server.');
+    res.status(503).json({ error: 'Gemini is not configured on this server.' });
     return;
   }
 
@@ -121,7 +122,10 @@ app.post('/api/gemini/generate', rateLimit, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Gemini request failed.');
+    res.status(500).json({
+      error: 'Gemini request failed.',
+      details: err?.message ? String(err.message) : undefined,
+    });
   }
 });
 

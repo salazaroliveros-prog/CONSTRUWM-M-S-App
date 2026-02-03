@@ -3,6 +3,7 @@ import Layout from './Layout';
 import { AppView, Employee, CandidateApplication, AttendanceRecord } from '../types';
 import { storageService } from '../services/storageService';
 import { COLORS, POSITIONS, LOGO_URL } from '../constants';
+import { edgeApi, formatApiError } from '../services/edgeApi';
 
 interface Props {
   onNavigate: (view: AppView) => void;
@@ -13,8 +14,8 @@ declare var L: any; // Leaflet global reference
 
 const RRHHView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   const [tab, setTab] = useState<'HIRE' | 'ATTENDANCE' | 'APPLICATIONS' | 'PAYROLL' | 'MAP'>('ATTENDANCE');
-  const [employees, setEmployees] = useState<Employee[]>(storageService.getEmployees());
-  const [applications, setApplications] = useState<CandidateApplication[]>(storageService.getApplications());
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [applications, setApplications] = useState<CandidateApplication[]>([]);
   const [selectedEmpForPayroll, setSelectedEmpForPayroll] = useState<any>(null);
   
   const mapRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,30 @@ const RRHHView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   });
 
   useEffect(() => {
+    // Load HR data from Supabase Edge (preferred). Fallback to localStorage.
+    const load = async () => {
+      if (!edgeApi.isConfigured()) {
+        setEmployees(storageService.getEmployees());
+        setApplications(storageService.getApplications());
+        return;
+      }
+      try {
+        const [empResp, appResp] = await Promise.all([
+          edgeApi.adminListEmployees(),
+          edgeApi.adminListApplications(),
+        ]);
+        setEmployees(empResp.employees);
+        setApplications(appResp.applications);
+      } catch (e) {
+        console.error('RRHHView load failed:', e);
+        setEmployees(storageService.getEmployees());
+        setApplications(storageService.getApplications());
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
     if (tab === 'MAP' && mapRef.current && !leafletMap.current) {
       const guateCoords = [14.6349, -90.5069];
       leafletMap.current = L.map(mapRef.current).setView(guateCoords, 13);
@@ -42,7 +67,7 @@ const RRHHView: React.FC<Props> = ({ onNavigate, onLogout }) => {
       const today = new Date().toISOString().split('T')[0];
       const markers: any[] = [];
       employees.forEach(emp => {
-        if (emp.lastAttendance && emp.lastAttendance.date === today) {
+        if (emp.lastAttendance && emp.lastAttendance.date === today && emp.lastAttendance.lat !== 0 && emp.lastAttendance.lng !== 0) {
           const marker = L.marker([emp.lastAttendance.lat, emp.lastAttendance.lng])
             .addTo(leafletMap.current)
             .bindPopup(`
@@ -108,7 +133,25 @@ const RRHHView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   const handleHire = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmployee.name || !newEmployee.dpi) return alert("Faltan datos críticos.");
-    const emp: Employee = { 
+    if (edgeApi.isConfigured()) {
+      edgeApi.adminHireEmployee({
+        name: String(newEmployee.name ?? ''),
+        dpi: String(newEmployee.dpi ?? ''),
+        phone: String(newEmployee.phone ?? ''),
+        position: String(newEmployee.position ?? POSITIONS[0].title),
+        salary: Number(newEmployee.salary ?? 0),
+      }).then(async (resp) => {
+        const empResp = await edgeApi.adminListEmployees();
+        setEmployees(empResp.employees);
+        alert(`Empleado integrado. ID: ${resp.workerId}`);
+        setTab('ATTENDANCE');
+      }).catch((err) => {
+        alert(formatApiError(err));
+      });
+      return;
+    }
+
+    const emp: Employee = {
       ...newEmployee as Employee, id: crypto.randomUUID(),
       workerId: storageService.generateWorkerId(),
       status: 'ACTIVE', attendanceStatus: 'OUT',
@@ -120,8 +163,17 @@ const RRHHView: React.FC<Props> = ({ onNavigate, onLogout }) => {
   };
 
   const handleApplicationAction = (app: CandidateApplication, action: 'ACCEPTED' | 'REJECTED') => {
-    storageService.updateApplicationStatus(app.id, action);
-    setApplications(storageService.getApplications());
+    if (edgeApi.isConfigured()) {
+      edgeApi.adminUpdateApplicationStatus(app.id, action).then(async () => {
+        const appResp = await edgeApi.adminListApplications();
+        setApplications(appResp.applications);
+      }).catch((err) => {
+        alert(formatApiError(err));
+      });
+    } else {
+      storageService.updateApplicationStatus(app.id, action);
+      setApplications(storageService.getApplications());
+    }
     if (action === 'ACCEPTED') {
       setNewEmployee({
         name: app.name, dpi: app.dpi, phone: app.phone,

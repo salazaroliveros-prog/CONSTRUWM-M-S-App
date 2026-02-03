@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-navy: #001f3f;
+  --color-gold: #b8860b;
+  --color-slate-900: #0f172a;
+  --color-slate-400: #94a3b8;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f8fafc;
+  color: var(--color-slate-900);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Estilos ejecutivos universales */
+input, select, textarea {
+  color: var(--color-slate-900) !important;
+  font-weight: 700 !important;
+  background-color: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  transition: all 0.2s ease-in-out !important;
+  font-size: 16px !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--color-gold) !important;
+  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.15) !important;
+}
+
+.logo-glow {
+  filter: drop-shadow(0 0 15px rgba(184, 134, 11, 0.2));
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+}
+
+.fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
